@@ -56,8 +56,8 @@ class Alien(pg.sprite.Sprite):
     velocity = 1
     bounce = 1 # 1 for out, -1 for in
     images = []
-    elapsed_time = 0
-    animation_time = 1000
+    elapsed_time = 0 # time in milliseconds since last bounce switch
+    animation_time = 1000 # time in milliseconds for animation
 
     def __init__(self, pos):
         """
@@ -93,6 +93,9 @@ class Alien(pg.sprite.Sprite):
         else:
             self._dive()
 
+    def get_center(self):
+        return self.rect.center
+
     def change_bounce():
         Alien.bounce = -Alien.bounce
 
@@ -107,6 +110,44 @@ class BlueAlien(Alien):
     (139, 177, 11, 12), \
     (162, 178, 13, 10), \
     (188, 178, 9, 10)]
+
+class BulletExplosion(pg.sprite.Sprite):
+
+    sprite_info = [ \
+    (211, 202, 7, 8), \
+    (234, 200, 12, 13), \
+    (256, 199, 16, 16), \
+    (283, 193, 27, 28), \
+    (321, 191, 31, 32)]
+    images = []
+
+    def_animation_time = 50
+
+    def __init__(self, pos):
+        """
+        Initializes a bullet explosion.
+        Args:
+            pos: the center of the explosion
+        """
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.elapsed_time = 0
+        self.animation_time = self.def_animation_time
+        self.index = 0
+        self.image = self.images[self.index]
+        self.rect = self.image.get_rect(center=pos)
+
+    def update(self):
+        self.elapsed_time += Galaga.clock.get_time()
+        if self.elapsed_time > self.animation_time:
+            self.index += 1
+            if self.index == len(self.images):
+                self.kill()
+            else:
+                self.image = self.images[self.index]
+                self.rect = self.image.get_rect(center=self.rect.center)
+                self.elapsed_time = 0
+
+
 
 class Galaga:
 
@@ -126,6 +167,9 @@ class Galaga:
         # load bullet images
         Bullet.images.append(ss.image_at((365, 219, 3, 8)))
         Bullet.images = ss.rescale_strip(Bullet.images, SCALE)
+
+        # load bullet explosion images
+        BulletExplosion.images = ss.rescale_strip(ss.images_at(BulletExplosion.sprite_info), SCALE)
 
         # load blue alien
         BlueAlien.images = ss.rescale_strip(ss.images_at(BlueAlien.sprites_info), SCALE)
@@ -151,6 +195,7 @@ class Galaga:
         Player.containers = self.all
         Bullet.containers = self.all, self.bullets
         Alien.containers = self.all, self.aliens
+        BulletExplosion.containers = self.all
 
         # create player
         self.player = Player()
@@ -188,6 +233,10 @@ class Galaga:
             if Alien.elapsed_time > Alien.animation_time:
                 Alien.elapsed_time = 0
                 Alien.change_bounce()
+
+            # check for collisions between bullets and aliens
+            for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
+                BulletExplosion(alien.get_center())
 
             # update all game objects
             self.all.update()
