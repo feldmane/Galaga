@@ -1,8 +1,5 @@
 TODO list: (in no particular order)
 
--Leaderboard
-  -keep the top 10 scores with associated initials in txt
-
 -Main menu screen / ending screen
   -refactor game to and the create a simple scene manager
   -create a simple scene manager

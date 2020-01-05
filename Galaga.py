@@ -1,6 +1,7 @@
 import os
 import random
 import pygame as pg
+from Leaderboard import Leaderboard
 from Spritesheet import spritesheet
 
 FPS = 60
@@ -190,6 +191,9 @@ class Score(pg.sprite.Sprite):
     def increment_score(self):
         self.score += 1
 
+    def get_score(self):
+        return self.score
+
 class Galaga:
 
     def __init__(self):
@@ -231,6 +235,8 @@ class Galaga:
 
         Galaga.clock = pg.time.Clock()
 
+        self.leaderboard = Leaderboard()
+
         # initialize game window
         self.window = pg.display.set_mode(SCREENRECT.size)
 
@@ -253,6 +259,7 @@ class Galaga:
         # create player
         self.player = Player()
 
+        # create a score
         self.score = Score()
         self.all.add(self.score)
 
@@ -330,6 +337,8 @@ class Galaga:
             pg.display.update()
 
     def quit(self):
+        self.leaderboard.insert(self.score.get_score(), "Eric")
+        self.leaderboard.close()
         pg.quit()
 
 def main():
