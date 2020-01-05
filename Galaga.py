@@ -1,4 +1,5 @@
 import os
+import random
 import pygame as pg
 from Spritesheet import spritesheet
 
@@ -38,7 +39,7 @@ class Bullet(pg.sprite.Sprite):
 
     def __init__(self, pos):
         """
-        Initializes a bullet.
+        Initializes a bullet (from the player).
         Args:
             pos: midbottom of the bullet
         """
@@ -51,26 +52,45 @@ class Bullet(pg.sprite.Sprite):
         if self.rect.top <= 0:
             self.kill()
 
+class Bomb(pg.sprite.Sprite):
+
+    velocity = 5
+    images = []
+
+    def __init__(self, pos):
+        """
+        Initializes a bomb (from an alien).
+        Args:
+            pos: midtop of the bomb
+        """
+        pg.sprite.Sprite.__init__(self, self.containers)
+        self.image = pg.transform.rotate(self.images[0], 180)
+        self.rect = self.image.get_rect(midtop=pos)
+
+    def update(self):
+        self.rect.move_ip(0, self.velocity)
+        if self.rect.bottom > SCREENRECT.h:
+            self.kill()
+
 class Alien(pg.sprite.Sprite):
 
     velocity = 1
     bounce = 1 # 1 for out, -1 for in
     images = []
     elapsed_time = 0 # time in milliseconds since last bounce switch
-    animation_time = 1000 # time in milliseconds for animation
+    animation_time = 500 # time in milliseconds for animation
 
     def __init__(self, pos):
         """
         Initializes an alien.
         Args:
-            pos: center corner of alien (x, y)
+            pos: center of alien (x, y)
         """
         pg.sprite.Sprite.__init__(self, self.containers)
         self.initial_pos = pos
         self.image = self.images[-1]
         self.rect = self.image.get_rect(center=pos)
         self.waiting = True
-
 
     def _waiting(self):
         if self.bounce > 0:
@@ -95,6 +115,9 @@ class Alien(pg.sprite.Sprite):
 
     def get_center(self):
         return self.rect.center
+
+    def get_gun_position(self):
+        return self.rect.midbottom
 
     def change_bounce():
         Alien.bounce = -Alien.bounce
@@ -152,9 +175,15 @@ class BulletExplosion(pg.sprite.Sprite):
 class Galaga:
 
     def __init__(self):
-        self.initialize_game()
         self.game_over = False
         self.max_shots = 2
+        self.max_aliens = 20
+        self.alien_reload_frames = 30 # min number of frames between alien spawns
+        self.alien_odds = 60
+        self.max_bombs = 20
+        self.bomb_reload_frames = 30
+        self.bomb_odds = 20
+        self.initialize_game()
 
     def load_images(self):
         # open sprite file and initialize sprite sheet loader
@@ -167,6 +196,10 @@ class Galaga:
         # load bullet images
         Bullet.images.append(ss.image_at((365, 219, 3, 8)))
         Bullet.images = ss.rescale_strip(Bullet.images, SCALE)
+
+        # load bomb images
+        Bomb.images.append(ss.image_at((365, 219, 3, 8)))
+        Bomb.images = ss.rescale_strip(Bomb.images, SCALE)
 
         # load bullet explosion images
         BulletExplosion.images = ss.rescale_strip(ss.images_at(BulletExplosion.sprite_info), SCALE)
@@ -189,20 +222,27 @@ class Galaga:
         # create groups
         self.all = pg.sprite.Group()
         self.bullets = pg.sprite.Group()
+        self.bombs = pg.sprite.Group()
         self.aliens = pg.sprite.Group()
 
         # create containers
         Player.containers = self.all
         Bullet.containers = self.all, self.bullets
+        Bomb.containers = self.all, self.bombs
         Alien.containers = self.all, self.aliens
         BulletExplosion.containers = self.all
 
         # create player
         self.player = Player()
 
-        # create aliens for testing
-        BlueAlien((SCREENRECT.w / 2 - 30, SCREENRECT.h / 2))
-        BlueAlien((SCREENRECT.w / 2 + 30, SCREENRECT.h / 2))
+        # a counter to keep track of the score
+        self.score = 0
+
+        # counter to see when alien can spawn
+        self.alien_reload = self.alien_reload_frames
+
+        # counter to see when aliens can shoot again
+        self.bomb_reload = self.bomb_reload_frames
 
     def run(self):
         # main game loop
@@ -228,6 +268,26 @@ class Galaga:
                 Bullet(self.player.get_gun_position())
             self.player.reloading = firing
 
+            # spawn aliens
+            if self.alien_reload:
+                self.alien_reload -= 1
+            elif len(self.aliens) < self.max_aliens and not int(random.random() * self.alien_odds):
+                offset = 50
+                x = random.randint(offset, SCREENRECT.w - (2 * offset))
+                y = random.randint(offset, SCREENRECT.h / 2)
+                BlueAlien((x, y))
+                self.alien_reload = self.alien_reload_frames
+
+            # decide when aliens shoot
+            if self.bomb_reload:
+                self.bomb_reload -= 1
+            elif len(self.bombs) < self.max_bombs and not int(random.random() * self.bomb_odds):
+                aliens = self.aliens.sprites()
+                if len(aliens) > 0:
+                    shooter = random.choice(aliens)
+                    Bomb(shooter.get_gun_position())
+                self.bomb_reload = self.bomb_reload_frames
+
             # check which direction aliens should be moving in
             Alien.elapsed_time += dt
             if Alien.elapsed_time > Alien.animation_time:
@@ -236,7 +296,12 @@ class Galaga:
 
             # check for collisions between bullets and aliens
             for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
+                self.score += 1
                 BulletExplosion(alien.get_center())
+
+            # check for collisions between
+            for bomb in pg.sprite.spritecollide(self.player, self.bombs, 1):
+                self.game_over = True
 
             # update all game objects
             self.all.update()
