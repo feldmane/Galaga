@@ -170,7 +170,25 @@ class BulletExplosion(pg.sprite.Sprite):
                 self.rect = self.image.get_rect(center=self.rect.center)
                 self.elapsed_time = 0
 
+class Score(pg.sprite.Sprite):
+    def __init__(self):
+        pg.sprite.Sprite.__init__(self)
+        self.font = pg.font.Font(None, 40)
+        self.font.set_italic(1)
+        self.color = pg.Color("white")
+        self.score = 0
+        self.displayed_score = -1
+        self.update()
+        self.rect = self.image.get_rect().move((10, SCREENRECT.h - 35))
 
+    def update(self):
+        if self.displayed_score != self.score:
+            self.displayed_score = self.score
+            msg = "%d" % self.score
+            self.image = self.font.render(msg, 0, self.color)
+
+    def increment_score(self):
+        self.score += 1
 
 class Galaga:
 
@@ -235,8 +253,8 @@ class Galaga:
         # create player
         self.player = Player()
 
-        # a counter to keep track of the score
-        self.score = 0
+        self.score = Score()
+        self.all.add(self.score)
 
         # counter to see when alien can spawn
         self.alien_reload = self.alien_reload_frames
@@ -296,7 +314,7 @@ class Galaga:
 
             # check for collisions between bullets and aliens
             for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
-                self.score += 1
+                self.score.increment_score()
                 BulletExplosion(alien.get_center())
 
             # check for collisions between

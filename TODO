@@ -1,11 +1,8 @@
 TODO list: (in no particular order)
 
-1. Scoring
+-Leaderboard
+  -keep the top 10 scores with associated initials in txt
 
-2. Leaderboard
-
-3. Diving for the aliens
-
-4. Bombs for the aliens
-
-5. Main menu screen / ending screen
+-Main menu screen / ending screen
+  -refactor game to and the create a simple scene manager
+  -create a simple scene manager
