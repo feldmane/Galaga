@@ -21,6 +21,9 @@ class Leaderboard:
 
         file.close()
 
+    def get_scores():
+        return self.scores
+
     def insert_index(self, score):
         for i in range(len(self.scores)):
             if score > self.scores[i][0]:
@@ -33,6 +36,7 @@ class Leaderboard:
             self.scores.insert(index, (score, initials))
             self.scores.pop()
             self.dirty = True
+        return index
 
     def close(self):
         if self.dirty:

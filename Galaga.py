@@ -1,8 +1,9 @@
 import pygame as pg
 
-from Scenes import SceneManager
-from GameScene import GameScene
-from MainMenu import MainMenu
+import Settings
+Settings.init()
+
+from Scenes import *
 
 def main():
     pg.init()

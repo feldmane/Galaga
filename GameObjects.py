@@ -1,5 +1,5 @@
 import pygame as pg
-from Scenes import *
+import Settings
 
 class Player(pg.sprite.Sprite):
 
@@ -11,13 +11,13 @@ class Player(pg.sprite.Sprite):
     def __init__(self):
         pg.sprite.Sprite.__init__(self, self.containers)
         self.image = self.images[-1]
-        self.rect = self.image.get_rect(midbottom=SCREENRECT.midbottom)
-        self.rect.bottom = INITIAL_HEIGHT - 30
+        self.rect = self.image.get_rect(midbottom=Settings.SCREENRECT.midbottom)
+        self.rect.bottom = Settings.INITIAL_HEIGHT - 30
         self.reloading = 0
 
     def move(self, direction):
         self.rect.move_ip(direction * self.velocity, 0)
-        self.rect = self.rect.clamp(SCREENRECT)
+        self.rect = self.rect.clamp(Settings.SCREENRECT)
 
     def get_gun_position(self):
         return self.rect.midtop
@@ -59,7 +59,7 @@ class Bomb(pg.sprite.Sprite):
 
     def update(self):
         self.rect.move_ip(0, self.velocity)
-        if self.rect.bottom > SCREENRECT.h:
+        if self.rect.bottom > Settings.SCREENRECT.h:
             self.kill()
 
 class Alien(pg.sprite.Sprite):
@@ -89,7 +89,7 @@ class Alien(pg.sprite.Sprite):
             self.image = self.images[-2]
 
         dir = self.bounce * self.velocity
-        if self.rect.centerx < (SCREENRECT.w / 2):
+        if self.rect.centerx < (Settings.SCREENRECT.w / 2):
             self.rect.move_ip(-dir, -dir)
         else:
             self.rect.move_ip(dir, -dir)
@@ -150,7 +150,7 @@ class BulletExplosion(pg.sprite.Sprite):
         self.rect = self.image.get_rect(center=pos)
 
     def update(self):
-        self.elapsed_time += SceneManager.clock.get_time()
+        self.elapsed_time += Settings.clock.get_time()
         if self.elapsed_time > self.animation_time:
             self.index += 1
             if self.index == len(self.images):
@@ -169,7 +169,7 @@ class Score(pg.sprite.Sprite):
         self.score = 0
         self.displayed_score = -1
         self.update()
-        self.rect = self.image.get_rect().move((10, SCREENRECT.h - 35))
+        self.rect = self.image.get_rect().move((10, Settings.SCREENRECT.h - 35))
 
     def update(self):
         if self.displayed_score != self.score:
