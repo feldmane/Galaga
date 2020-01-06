@@ -36,6 +36,8 @@ class SceneManager:
             self.scene.update()
             self.scene.render(SceneManager.window)
 
+            Settings.clock.tick(Settings.FPS)
+
     def quit(self):
         pg.quit()
 
@@ -55,7 +57,7 @@ class GameScene(Scene):
         self.max_shots = 2
         self.max_aliens = 20
         self.alien_reload_frames = 30 # min number of frames between alien spawns
-        self.alien_odds = 60
+        self.alien_odds = 20
         self.max_bombs = 20
         self.bomb_reload_frames = 30
         self.bomb_odds = 20
@@ -117,7 +119,7 @@ class GameScene(Scene):
         pass
 
     def update(self):
-        dt = Settings.clock.tick(Settings.FPS)
+        dt = Settings.clock.get_time()
 
         keystate = pg.key.get_pressed()
 
