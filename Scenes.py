@@ -1,3 +1,4 @@
+import math
 import os
 import random
 
@@ -17,13 +18,14 @@ class SceneManager:
         self.scene = None
 
     def switch_to_scene(self, scene):
+        pg.Surface.fill(SceneManager.window, (0, 0, 0))
         self.scene = scene
         if self.scene is not None:
             self.scene.manager = self
 
     def terminate(self):
         self.scene = None
-        pg.quit()
+        self.quit()
 
     def run_scene(self):
         while self.scene != None:
@@ -33,8 +35,10 @@ class SceneManager:
                 return
 
             self.scene.handle_events(pg.event.get())
-            self.scene.update()
-            self.scene.render(SceneManager.window)
+            if self.scene != None:
+                self.scene.update()
+                self.scene.render(SceneManager.window)
+                pg.display.flip()
 
             Settings.clock.tick(Settings.FPS)
 
@@ -61,6 +65,7 @@ class GameScene(Scene):
         self.max_bombs = 20
         self.bomb_reload_frames = 30
         self.bomb_odds = 20
+        self.countdownTime = 3
         self.initialize_game()
 
     def load_images(self):
@@ -86,6 +91,7 @@ class GameScene(Scene):
         BlueAlien.images = ss.rescale_strip(ss.images_at(BlueAlien.sprites_info), Settings.SCALE)
 
     def initialize_game(self):
+        self.state = "countdown"
         # load images
         self.load_images()
 
@@ -115,58 +121,77 @@ class GameScene(Scene):
         # counter to see when aliens can shoot again
         self.bomb_reload = self.bomb_reload_frames
 
+        # countdown timer
+        self.countdownTimer = self.countdownTime
+
     def handle_events(self, events):
         pass
 
     def update(self):
         dt = Settings.clock.get_time()
 
-        keystate = pg.key.get_pressed()
+        if self.state == "game":
+            keystate = pg.key.get_pressed()
 
-        #move player
-        direction = keystate[pg.K_RIGHT] - keystate[pg.K_LEFT]
-        self.player.move(direction)
+            #move player
+            direction = keystate[pg.K_RIGHT] - keystate[pg.K_LEFT]
+            self.player.move(direction)
 
-        # shoot bullets
-        firing = keystate[pg.K_SPACE]
-        if firing and not self.player.reloading and len(self.bullets) < self.max_shots:
-            Bullet(self.player.get_gun_position())
-        self.player.reloading = firing
+            # shoot bullets
+            firing = keystate[pg.K_SPACE]
+            if firing and not self.player.reloading and len(self.bullets) < self.max_shots:
+                Bullet(self.player.get_gun_position())
+            self.player.reloading = firing
 
-        # spawn aliens
-        if self.alien_reload:
-            self.alien_reload -= 1
-        elif len(self.aliens) < self.max_aliens and not int(random.random() * self.alien_odds):
-            offset = 50
-            x = random.randint(offset, Settings.SCREENRECT.w - (2 * offset))
-            y = random.randint(offset, Settings.SCREENRECT.h / 2)
-            BlueAlien((x, y))
-            self.alien_reload = self.alien_reload_frames
+            # spawn aliens
+            if self.alien_reload:
+                self.alien_reload -= 1
+            elif len(self.aliens) < self.max_aliens and not int(random.random() * self.alien_odds):
+                offset = 50
+                x = random.randint(offset, Settings.SCREENRECT.w - (2 * offset))
+                y = random.randint(offset, Settings.SCREENRECT.h / 2)
+                BlueAlien((x, y))
+                self.alien_reload = self.alien_reload_frames
 
-        # decide when aliens shoot
-        if self.bomb_reload:
-            self.bomb_reload -= 1
-        elif len(self.bombs) < self.max_bombs and not int(random.random() * self.bomb_odds):
-            aliens = self.aliens.sprites()
-            if len(aliens) > 0:
-                shooter = random.choice(aliens)
-                Bomb(shooter.get_gun_position())
-            self.bomb_reload = self.bomb_reload_frames
+            # decide when aliens shoot
+            if self.bomb_reload:
+                self.bomb_reload -= 1
+            elif len(self.bombs) < self.max_bombs and not int(random.random() * self.bomb_odds):
+                aliens = self.aliens.sprites()
+                if len(aliens) > 0:
+                    shooter = random.choice(aliens)
+                    Bomb(shooter.get_gun_position())
+                self.bomb_reload = self.bomb_reload_frames
 
-        # check which direction aliens should be moving in
-        Alien.elapsed_time += dt
-        if Alien.elapsed_time > Alien.animation_time:
-            Alien.elapsed_time = 0
-            Alien.change_bounce()
+            # check which direction aliens should be moving in
+            Alien.elapsed_time += dt
+            if Alien.elapsed_time > Alien.animation_time:
+                Alien.elapsed_time = 0
+                Alien.change_bounce()
 
-        # check for collisions between bullets and aliens
-        for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
-            self.score.increment_score()
-            BulletExplosion(alien.get_center())
+            # check for collisions between bullets and aliens
+            for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
+                self.score.increment_score()
+                BulletExplosion(alien.get_center())
 
-        # check for collisions between
-        for bomb in pg.sprite.spritecollide(self.player, self.bombs, 1):
-            self.manager.switch_to_scene(None)
+            # check for collisions between
+            for bomb in pg.sprite.spritecollide(self.player, self.bombs, 1):
+                self.manager.switch_to_scene(MainMenu())
+
+        elif self.state == "countdown":
+            self.countdownTimer -= (dt / 1000)
+            time = int(math.ceil(self.countdownTimer))
+            largeText = pg.font.Font(None, 100)
+            textSurf = largeText.render(str(time), True, (255, 255, 255), (0, 0, 0))
+            textRect = textSurf.get_rect()
+            textRect.center = ((Settings.SCREENRECT.w/2),(Settings.SCREENRECT.h/2))
+            if time == 0:
+                textSurf = pg.Surface((textRect.w, textRect.h))
+                textRect = textSurf.get_rect()
+                textRect.center = ((Settings.SCREENRECT.w/2),(Settings.SCREENRECT.h/2))
+                self.state = "game"
+
+            SceneManager.window.blit(textSurf, textRect)
 
         # update all game objects
         self.all.update()
@@ -174,7 +199,6 @@ class GameScene(Scene):
     def render(self, window):
         self.all.clear(window, pg.Surface(Settings.SCREENRECT.size))
         self.all.draw(window)
-        pg.display.update()
 
 class MainMenu(Scene):
 
@@ -194,15 +218,13 @@ class MainMenu(Scene):
         self.box.update()
 
     def play_button_action(self):
-        SceneManager.window.fill((0, 0, 0))
         self.manager.switch_to_scene(GameScene())
 
     def leaderboard_button_action(self):
-        SceneManager.window.fill((0, 0, 0))
         self.manager.switch_to_scene(LeaderboardScene())
 
     def quit_button_action(self):
-        self.manager.Terminate()
+        self.manager.terminate()
 
     def handle_events(self, events):
         for event in events:
@@ -230,7 +252,6 @@ class LeaderboardScene(Scene):
         self.box.update()
 
     def back_button_action(self):
-        SceneManager.window.fill((0, 0, 0))
         self.Leaderboard.close()
         self.manager.switch_to_scene(MainMenu())
 
