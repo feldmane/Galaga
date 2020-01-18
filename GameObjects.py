@@ -1,5 +1,7 @@
 import pygame as pg
+
 import Settings
+
 
 class Player(pg.sprite.Sprite):
 
@@ -21,6 +23,9 @@ class Player(pg.sprite.Sprite):
 
     def get_gun_position(self):
         return self.rect.midtop
+
+    def get_center(self):
+        return self.rect.center
 
 class Bullet(pg.sprite.Sprite):
 
@@ -124,14 +129,8 @@ class BlueAlien(Alien):
     (162, 178, 13, 10), \
     (188, 178, 9, 10)]
 
-class BulletExplosion(pg.sprite.Sprite):
+class Explosion(pg.sprite.Sprite):
 
-    sprite_info = [ \
-    (211, 202, 7, 8), \
-    (234, 200, 12, 13), \
-    (256, 199, 16, 16), \
-    (283, 193, 27, 28), \
-    (321, 191, 31, 32)]
     images = []
 
     def_animation_time = 50
@@ -159,6 +158,24 @@ class BulletExplosion(pg.sprite.Sprite):
                 self.image = self.images[self.index]
                 self.rect = self.image.get_rect(center=self.rect.center)
                 self.elapsed_time = 0
+
+class BulletExplosion(Explosion):
+    sprite_info = [ \
+    (211, 202, 7, 8), \
+    (234, 200, 12, 13), \
+    (256, 199, 16, 16), \
+    (283, 193, 27, 28), \
+    (321, 191, 31, 32)]
+
+class PlayerExplosion(Explosion):
+    sprite_info = [ \
+    (210, 49, 29, 28), \
+    (249, 49, 29, 30), \
+    (288, 47, 32, 32), \
+    (329, 49, 29, 30)]
+
+    def_animation_time = 200
+
 
 class Score(pg.sprite.Sprite):
     def __init__(self):

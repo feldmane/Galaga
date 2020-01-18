@@ -21,8 +21,11 @@ class Leaderboard:
 
         file.close()
 
-    def get_scores():
+    def get_scores(self):
         return self.scores
+
+    def check_insert(self, score):
+        return score > self.scores[len(self.scores) - 1]
 
     def insert_index(self, score):
         for i in range(len(self.scores)):

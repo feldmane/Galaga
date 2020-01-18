@@ -1,8 +1,5 @@
 import pygame as pg
 
-import Settings
-Settings.init()
-
 from Scenes import *
 
 def main():

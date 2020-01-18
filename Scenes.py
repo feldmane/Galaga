@@ -87,6 +87,9 @@ class GameScene(Scene):
         # load bullet explosion images
         BulletExplosion.images = ss.rescale_strip(ss.images_at(BulletExplosion.sprite_info), Settings.SCALE)
 
+        # Load player explosion images
+        PlayerExplosion.images = ss.rescale_strip(ss.images_at(PlayerExplosion.sprite_info), Settings.SCALE)
+
         # load blue alien
         BlueAlien.images = ss.rescale_strip(ss.images_at(BlueAlien.sprites_info), Settings.SCALE)
 
@@ -100,6 +103,7 @@ class GameScene(Scene):
         self.bullets = pg.sprite.Group()
         self.bombs = pg.sprite.Group()
         self.aliens = pg.sprite.Group()
+        self.player_explosion = pg.sprite.GroupSingle()
 
         # create containers
         Player.containers = self.all
@@ -107,6 +111,7 @@ class GameScene(Scene):
         Bomb.containers = self.all, self.bombs
         Alien.containers = self.all, self.aliens
         BulletExplosion.containers = self.all
+        PlayerExplosion.containers = self.all, self.player_explosion
 
         # create player
         self.player = Player()
@@ -129,6 +134,12 @@ class GameScene(Scene):
 
     def update(self):
         dt = Settings.clock.get_time()
+
+        # check which direction aliens should be moving in
+        Alien.elapsed_time += dt
+        if Alien.elapsed_time > Alien.animation_time:
+            Alien.elapsed_time = 0
+            Alien.change_bounce()
 
         if self.state == "game":
             keystate = pg.key.get_pressed()
@@ -163,20 +174,16 @@ class GameScene(Scene):
                     Bomb(shooter.get_gun_position())
                 self.bomb_reload = self.bomb_reload_frames
 
-            # check which direction aliens should be moving in
-            Alien.elapsed_time += dt
-            if Alien.elapsed_time > Alien.animation_time:
-                Alien.elapsed_time = 0
-                Alien.change_bounce()
-
             # check for collisions between bullets and aliens
             for alien in pg.sprite.groupcollide(self.aliens, self.bullets, 1, 1).keys():
                 self.score.increment_score()
                 BulletExplosion(alien.get_center())
 
-            # check for collisions between
+            # check for collisions between player and bombs
             for bomb in pg.sprite.spritecollide(self.player, self.bombs, 1):
-                self.manager.switch_to_scene(MainMenu())
+                self.player.kill()
+                PlayerExplosion(self.player.get_center())
+                self.state = "gameover"
 
         elif self.state == "countdown":
             self.countdownTimer -= (dt / 1000)
@@ -192,6 +199,13 @@ class GameScene(Scene):
                 self.state = "game"
 
             SceneManager.window.blit(textSurf, textRect)
+
+        elif self.state == "gameover":
+            self.leaderboard = Leaderboard()
+            self.leaderboard.insert(self.score.get_score(), "ERF")
+            self.leaderboard.close()
+            if (self.player_explosion.sprite == None):
+                self.manager.switch_to_scene(MainMenu())
 
         # update all game objects
         self.all.update()
@@ -213,9 +227,17 @@ class MainMenu(Scene):
         for element in self.menu.get_population():
             element.surface = SceneManager.window
 
-        self.box.set_center((Settings.SCREENRECT.w / 2, Settings.SCREENRECT.h / 2))
-        self.box.blit()
-        self.box.update()
+        button_painter = thorpy.painters.roundrect.RoundRect(color=(0, 0, 0))
+
+        for button in all_buttons:
+            button.set_painter(button_painter)
+            button.set_font_color((255, 255, 255))
+            button.set_font_color_hover((200, 0, 0))
+
+        box_painter = thorpy.painters.roundrect.RoundRect(size=(100, 100),color=(0, 0, 0))
+
+        self.box.center()
+        self.box.set_painter(box_painter)
 
     def play_button_action(self):
         self.manager.switch_to_scene(GameScene())
@@ -231,7 +253,8 @@ class MainMenu(Scene):
             self.menu.react(event)
 
     def update(self):
-        pass
+        self.box.blit()
+        self.box.update()
 
     def render(self, window):
         pass
@@ -240,16 +263,23 @@ class LeaderboardScene(Scene):
 
     def __init__(self):
         self.Leaderboard = Leaderboard()
-        self.back_button = thorpy.make_button("back", func=self.back_button_action)
+
+        self.back_button = thorpy.make_button("Back", func=self.back_button_action)
+        button_painter = thorpy.painters.roundrect.RoundRect(color=(0, 0, 0))
+        self.back_button.set_painter(button_painter)
+        self.back_button.set_font_color((255, 255, 255))
+        self.back_button.set_font_color_hover((200, 0, 0))
 
         self.box = thorpy.Box(elements=[self.back_button])
+        box_painter = thorpy.painters.roundrect.RoundRect(size=(100, 100),color=(0, 0, 0))
+        self.box.set_painter(box_painter)
+
         self.menu = thorpy.Menu(self.box)
 
         for element in self.menu.get_population():
             element.surface = SceneManager.window
 
-        self.box.blit()
-        self.box.update()
+
 
     def back_button_action(self):
         self.Leaderboard.close()
@@ -260,7 +290,8 @@ class LeaderboardScene(Scene):
             self.menu.react(event)
 
     def update(self):
-        pass
+        self.box.blit()
+        self.box.update()
 
     def render(self, window):
         pass
