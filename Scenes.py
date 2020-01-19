@@ -18,7 +18,7 @@ class SceneManager:
         self.scene = None
 
     def switch_to_scene(self, scene):
-        pg.Surface.fill(SceneManager.window, Settings.BLACK)
+        pg.Surface.fill(SceneManager.window, pg.Color('black'))
         self.scene = scene
         if self.scene is not None:
             self.scene.manager = self
@@ -224,7 +224,7 @@ class MainMenu(Scene):
         self.UIElements.append(self.title)
 
         offset = 20
-        button_text_color_hover = Settings.RED
+        button_text_color_hover = pg.Color('red')
         self.play_button = Button("Play", (Settings.SCREENRECT.w / 2, Settings.SCREENRECT.h / 2), func=self.play_button_action)
         self.play_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.play_button)
@@ -239,6 +239,9 @@ class MainMenu(Scene):
         self.quit_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.quit_button)
 
+        self.textBox = TextBox((100, 100), 100)
+        self.UIElements.append(self.textBox)
+
     def play_button_action(self):
         self.manager.switch_to_scene(GameScene())
 
@@ -250,7 +253,7 @@ class MainMenu(Scene):
 
     def handle_events(self, events):
         for element in self.UIElements:
-            element.handle_input()
+            element.handle_events(events)
 
     def update(self):
         pass
@@ -266,7 +269,7 @@ class LeaderboardScene(Scene):
         self.UIElements = []
 
         self.back_button = Button("Back", (0, 0), func=self.back_button_action)
-        self.back_button.set_text_color_hover(Settings.RED)
+        self.back_button.set_text_color_hover(pg.Color('red'))
         self.back_button.set_topleft((5, 5))
         self.UIElements.append(self.back_button)
 
@@ -291,7 +294,7 @@ class LeaderboardScene(Scene):
 
     def handle_events(self, events):
         for element in self.UIElements:
-            element.handle_input()
+            element.handle_events(events)
 
     def update(self):
         pass
