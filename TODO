@@ -1,5 +1,9 @@
 TODO list: (in no particular order)
 
--Main menu screen / ending screen
-  -refactor game to and the create a simple scene manager
-  -create a simple scene manager
+-reimplement the countdown timer to use a Text object
+
+-implement a textbox
+
+-implement a way for the user to enter a high score if possible
+
+-decide how to display high scores at the end of the game
