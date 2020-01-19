@@ -7,6 +7,7 @@ def main():
     game = SceneManager()
     game.switch_to_scene(MainMenu())
     game.run_scene()
+    game.quit()
 
 if __name__ == "__main__":
     main()

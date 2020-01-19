@@ -3,12 +3,12 @@ import os
 import random
 
 import pygame as pg
-import thorpy
 
 from Leaderboard import Leaderboard
 from GameObjects import *
 from Spritesheet import spritesheet
 import Settings
+from UIElements import *
 
 class SceneManager:
 
@@ -18,14 +18,13 @@ class SceneManager:
         self.scene = None
 
     def switch_to_scene(self, scene):
-        pg.Surface.fill(SceneManager.window, (0, 0, 0))
+        pg.Surface.fill(SceneManager.window, Settings.BLACK)
         self.scene = scene
         if self.scene is not None:
             self.scene.manager = self
 
     def terminate(self):
         self.scene = None
-        self.quit()
 
     def run_scene(self):
         while self.scene != None:
@@ -77,10 +76,12 @@ class GameScene(Scene):
         Player.images = ss.rescale_strip(ss.load_strip(Player.sprite_size, Player.num_sprites, 8), Settings.SCALE)
 
         # load bullet images
+        Bullet.images.clear()
         Bullet.images.append(ss.image_at((365, 219, 3, 8)))
         Bullet.images = ss.rescale_strip(Bullet.images, Settings.SCALE)
 
         # load bomb images
+        Bomb.images.clear()
         Bomb.images.append(ss.image_at((365, 219, 3, 8)))
         Bomb.images = ss.rescale_strip(Bomb.images, Settings.SCALE)
 
@@ -183,6 +184,9 @@ class GameScene(Scene):
             for bomb in pg.sprite.spritecollide(self.player, self.bombs, 1):
                 self.player.kill()
                 PlayerExplosion(self.player.get_center())
+                self.leaderboard = Leaderboard()
+                self.leaderboard.insert(self.score.get_score(), "ERF")
+                self.leaderboard.close()
                 self.state = "gameover"
 
         elif self.state == "countdown":
@@ -201,9 +205,6 @@ class GameScene(Scene):
             SceneManager.window.blit(textSurf, textRect)
 
         elif self.state == "gameover":
-            self.leaderboard = Leaderboard()
-            self.leaderboard.insert(self.score.get_score(), "ERF")
-            self.leaderboard.close()
             if (self.player_explosion.sprite == None):
                 self.manager.switch_to_scene(MainMenu())
 
@@ -217,27 +218,26 @@ class GameScene(Scene):
 class MainMenu(Scene):
 
     def __init__(self):
-        self.play_button = thorpy.make_button("Play", func=self.play_button_action)
-        self.leaderboard_button = thorpy.make_button("Leaderboard", func=self.leaderboard_button_action)
-        self.quit_button = thorpy.make_button("Quit", func=self.quit_button_action)
-        all_buttons = [self.play_button, self.leaderboard_button, self.quit_button]
-        self.box = thorpy.Box(elements=all_buttons)
-        self.menu = thorpy.Menu(self.box)
+        self.UIElements = []
+        self.title = Text("Galaga", (Settings.SCREENRECT.w / 2, 70))
+        self.title.set_font_size(50)
+        self.UIElements.append(self.title)
 
-        for element in self.menu.get_population():
-            element.surface = SceneManager.window
+        offset = 20
+        button_text_color_hover = Settings.RED
+        self.play_button = Button("Play", (Settings.SCREENRECT.w / 2, Settings.SCREENRECT.h / 2), func=self.play_button_action)
+        self.play_button.set_text_color_hover(button_text_color_hover)
+        self.UIElements.append(self.play_button)
 
-        button_painter = thorpy.painters.roundrect.RoundRect(color=(0, 0, 0))
+        leaderboard_button_pos = (Settings.SCREENRECT.w / 2, self.play_button.rect.bottom + offset)
+        self.leaderboard_button = Button("Leaderboard", leaderboard_button_pos, func=self.leaderboard_button_action)
+        self.leaderboard_button.set_text_color_hover(button_text_color_hover)
+        self.UIElements.append(self.leaderboard_button)
 
-        for button in all_buttons:
-            button.set_painter(button_painter)
-            button.set_font_color((255, 255, 255))
-            button.set_font_color_hover((200, 0, 0))
-
-        box_painter = thorpy.painters.roundrect.RoundRect(size=(100, 100),color=(0, 0, 0))
-
-        self.box.center()
-        self.box.set_painter(box_painter)
+        quit_button_pos = (Settings.SCREENRECT.w / 2, self.leaderboard_button.rect.bottom + offset)
+        self.quit_button = Button("Quit", quit_button_pos, func=self.quit_button_action)
+        self.quit_button.set_text_color_hover(button_text_color_hover)
+        self.UIElements.append(self.quit_button)
 
     def play_button_action(self):
         self.manager.switch_to_scene(GameScene())
@@ -249,49 +249,53 @@ class MainMenu(Scene):
         self.manager.terminate()
 
     def handle_events(self, events):
-        for event in events:
-            self.menu.react(event)
+        for element in self.UIElements:
+            element.handle_input()
 
     def update(self):
-        self.box.blit()
-        self.box.update()
+        pass
 
     def render(self, window):
-        pass
+        for element in self.UIElements:
+            element.render(window)
 
 class LeaderboardScene(Scene):
 
     def __init__(self):
-        self.Leaderboard = Leaderboard()
+        self.leaderboard = Leaderboard()
+        self.UIElements = []
 
-        self.back_button = thorpy.make_button("Back", func=self.back_button_action)
-        button_painter = thorpy.painters.roundrect.RoundRect(color=(0, 0, 0))
-        self.back_button.set_painter(button_painter)
-        self.back_button.set_font_color((255, 255, 255))
-        self.back_button.set_font_color_hover((200, 0, 0))
+        self.back_button = Button("Back", (0, 0), func=self.back_button_action)
+        self.back_button.set_text_color_hover(Settings.RED)
+        self.back_button.set_topleft((5, 5))
+        self.UIElements.append(self.back_button)
 
-        self.box = thorpy.Box(elements=[self.back_button])
-        box_painter = thorpy.painters.roundrect.RoundRect(size=(100, 100),color=(0, 0, 0))
-        self.box.set_painter(box_painter)
+        self.title = Text("Leaderboard", (Settings.SCREENRECT.w / 2, 70))
+        self.title.set_font_size(50)
+        self.UIElements.append(self.title)
 
-        self.menu = thorpy.Menu(self.box)
-
-        for element in self.menu.get_population():
-            element.surface = SceneManager.window
-
-
+        scores = self.leaderboard.get_scores()
+        i = 0
+        initial_height = 200
+        offset = 40
+        while i < len(scores) and scores[i][0] != -1:
+            text = "{} - {}".format(scores[i][1], scores[i][0])
+            entry = Text(text, (Settings.SCREENRECT.w / 2, initial_height + (offset * i)))
+            entry.set_font_size(36)
+            self.UIElements.append(entry)
+            i += 1
 
     def back_button_action(self):
-        self.Leaderboard.close()
+        self.leaderboard.close()
         self.manager.switch_to_scene(MainMenu())
 
     def handle_events(self, events):
-        for event in events:
-            self.menu.react(event)
+        for element in self.UIElements:
+            element.handle_input()
 
     def update(self):
-        self.box.blit()
-        self.box.update()
+        pass
 
     def render(self, window):
-        pass
+        for element in self.UIElements:
+            element.render(window)
