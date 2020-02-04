@@ -224,23 +224,27 @@ class MainMenu(Scene):
         self.UIElements.append(self.title)
 
         offset = 20
+        width = 200
+        height = 30
+        left = Settings.SCREENRECT.w / 2 - width / 2
         button_text_color_hover = pg.Color('red')
-        self.play_button = Button("Play", (Settings.SCREENRECT.w / 2, Settings.SCREENRECT.h / 2), func=self.play_button_action)
+        rect = (left, Settings.SCREENRECT.h / 2 - 40, width, height)
+        self.play_button = Button(rect, text="Play", func=self.play_button_action)
         self.play_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.play_button)
 
-        leaderboard_button_pos = (Settings.SCREENRECT.w / 2, self.play_button.rect.bottom + offset)
-        self.leaderboard_button = Button("Leaderboard", leaderboard_button_pos, func=self.leaderboard_button_action)
+        rect = (left, self.play_button.rect.bottom + offset, width, height)
+        self.leaderboard_button = Button(rect, text="Leaderboard",func=self.leaderboard_button_action)
         self.leaderboard_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.leaderboard_button)
 
-        quit_button_pos = (Settings.SCREENRECT.w / 2, self.leaderboard_button.rect.bottom + offset)
-        self.quit_button = Button("Quit", quit_button_pos, func=self.quit_button_action)
+        rect = (left, self.leaderboard_button.rect.bottom + offset, width, height)
+        self.quit_button = Button(rect, text="Quit", func=self.quit_button_action)
         self.quit_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.quit_button)
 
-        self.textBox = TextBox((100, 100), 100)
-        self.UIElements.append(self.textBox)
+        #self.textBox = TextBox((100, 100), 100)
+        #self.UIElements.append(self.textBox)
 
     def play_button_action(self):
         self.manager.switch_to_scene(GameScene())
@@ -259,6 +263,7 @@ class MainMenu(Scene):
         pass
 
     def render(self, window):
+        pg.Surface.fill(window, pg.Color('black'))
         for element in self.UIElements:
             element.render(window)
 

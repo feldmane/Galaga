@@ -62,25 +62,26 @@ class Text(UIElement):
 
 class Button(UIElement):
 
-    def __init__(self, text, center, func=None):
-        self.filling = pg.Color('black')
-        self.filling_hover = pg.Color('black')
+    def __init__(self, rect, text=None, func=None):
+        self.color = pg.Color('black')
+        self.color_hover = pg.Color('black')
+
         self.text_color = pg.Color('white')
         self.text_color_hover = self.text_color
+        self.font_style = None
+        self.font_size = 22
+        self.font = pg.font.Font(self.font_style, self.font_size)
 
-        self.text = Text(text, center)
-        self.text.set_background(self.filling)
+        self.rect = pg.Rect(rect)
+        self.surface = pg.Surface(self.rect.size)
+        self.surface.fill(self.color)
 
-        self.surface = pg.Surface((self.text.rect.w, self.text.rect.h))
-        self.rect = self.surface.get_rect()
-        self.rect.center = center
+        self.text = text
+        self.text_surface = self.font.render(self.text, False, self.text_color, self.color)
+        self.text_rect = self.text_surface.get_rect(center=self.rect.center)
 
         self.func = func
         self.pressed = False
-
-    def set_topleft(self, pos):
-        self.rect.topleft = pos
-        self.text.set_center(self.rect.center)
 
     def set_filling(self, color):
         self.filling = color
@@ -101,13 +102,11 @@ class Button(UIElement):
         for event in events:
             if event.type == pg.MOUSEMOTION:
                 if self.is_over(event.pos):
-                    self.surface.fill(self.filling_hover)
-                    self.text.set_color(self.text_color_hover)
-                    self.text.set_background(self.filling_hover)
+                    self.surface.fill(self.color_hover)
+                    self.text_surface = self.font.render(self.text, False, self.text_color_hover, self.color_hover)
                 else:
-                    self.surface.fill(self.filling)
-                    self.text.set_color(self.text_color)
-                    self.text.set_background(self.filling)
+                    self.surface.fill(self.color)
+                    self.text_surface = self.font.render(self.text, False, self.text_color, self.color)
 
             if event.type == pg.MOUSEBUTTONDOWN:
                 if self.is_over(event.pos) and event.button == 1:
@@ -121,7 +120,7 @@ class Button(UIElement):
 
     def render(self, window):
         window.blit(self.surface, self.rect)
-        self.text.render(window)
+        window.blit(self.text_surface, self.text_rect)
 
 class TextBox(UIElement):
 
@@ -158,10 +157,7 @@ class TextBox(UIElement):
     def handle_events(self, events):
         for event in events:
             if event.type == pg.MOUSEBUTTONDOWN:
-                if self.is_over(event.pos) and event.button == 1:
-                    self.selected = True
-                else:
-                    self.selected = False
+                self.selected = self.is_over(event.pos) and event.button == 1
 
             if event.type == pg.KEYDOWN:
                 if self.selected:
@@ -184,7 +180,6 @@ class TextBox(UIElement):
         else:
             self.surface.fill(self.filling)
             self.text.set_background(self.filling)
-
 
     def render(self, window):
         window.blit(self.surface, self.rect)
