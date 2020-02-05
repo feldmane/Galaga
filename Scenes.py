@@ -67,6 +67,19 @@ class GameScene(Scene):
         self.countdownTime = 3
         self.initialize_game()
 
+        self.UIElements = []
+
+        width = 100
+        height = 30
+        offset = 5
+
+        self.high_score_text = Text("New High Score! Enter Initials", (Settings.SCREENRECT.w /2, Settings.SCREENRECT.h / 2 - 40))
+        self.UIElements.append(self.high_score_text)
+
+        rect = ((Settings.SCREENRECT.w - width) / 2, self.high_score_text.rect.bottom + offset, width, height)
+        self.high_score_box = TextBox(rect, func=self.enter_high_score, empty_text="Initials...")
+        self.UIElements.append(self.high_score_box)
+
     def load_images(self):
         # open sprite file and initialize sprite sheet loader
         file = os.path.join(Settings.cwd, "sprites.png")
@@ -130,8 +143,15 @@ class GameScene(Scene):
         # countdown timer
         self.countdownTimer = self.countdownTime
 
+    def enter_high_score(self):
+        self.leaderboard.insert(self.score.get_score(), self.high_score_box.get_text())
+        self.leaderboard.close()
+        self.manager.switch_to_scene(LeaderboardScene())
+
     def handle_events(self, events):
-        pass
+        if self.state == "gameover" and self.got_high_score and self.player_explosion.sprite == None:
+            for element in self.UIElements:
+                element.handle_events(events)
 
     def update(self):
         dt = Settings.clock.get_time()
@@ -185,8 +205,7 @@ class GameScene(Scene):
                 self.player.kill()
                 PlayerExplosion(self.player.get_center())
                 self.leaderboard = Leaderboard()
-                self.leaderboard.insert(self.score.get_score(), "ERF")
-                self.leaderboard.close()
+                self.got_high_score = self.leaderboard.check_insert(self.score.get_score())
                 self.state = "gameover"
 
         elif self.state == "countdown":
@@ -205,8 +224,12 @@ class GameScene(Scene):
             SceneManager.window.blit(textSurf, textRect)
 
         elif self.state == "gameover":
-            if (self.player_explosion.sprite == None):
-                self.manager.switch_to_scene(MainMenu())
+            if self.player_explosion.sprite == None:
+                if self.got_high_score:
+                    for element in self.UIElements:
+                        element.update()
+                else:
+                    self.manager.switch_to_scene(LeaderboardScene())
 
         # update all game objects
         self.all.update()
@@ -214,6 +237,9 @@ class GameScene(Scene):
     def render(self, window):
         self.all.clear(window, pg.Surface(Settings.SCREENRECT.size))
         self.all.draw(window)
+        if self.state == "gameover" and self.got_high_score and self.player_explosion.sprite == None:
+            for element in self.UIElements:
+                element.render(window)
 
 class MainMenu(Scene):
 
@@ -243,9 +269,6 @@ class MainMenu(Scene):
         self.quit_button.set_text_color_hover(button_text_color_hover)
         self.UIElements.append(self.quit_button)
 
-        #self.textBox = TextBox((100, 100), 100)
-        #self.UIElements.append(self.textBox)
-
     def play_button_action(self):
         self.manager.switch_to_scene(GameScene())
 
@@ -260,7 +283,8 @@ class MainMenu(Scene):
             element.handle_events(events)
 
     def update(self):
-        pass
+        for element in self.UIElements:
+            element.update()
 
     def render(self, window):
         pg.Surface.fill(window, pg.Color('black'))
@@ -273,9 +297,8 @@ class LeaderboardScene(Scene):
         self.leaderboard = Leaderboard()
         self.UIElements = []
 
-        self.back_button = Button("Back", (0, 0), func=self.back_button_action)
+        self.back_button = Button((10, 5, 20, 20), text="Back", func=self.back_button_action)
         self.back_button.set_text_color_hover(pg.Color('red'))
-        self.back_button.set_topleft((5, 5))
         self.UIElements.append(self.back_button)
 
         self.title = Text("Leaderboard", (Settings.SCREENRECT.w / 2, 70))
@@ -302,7 +325,8 @@ class LeaderboardScene(Scene):
             element.handle_events(events)
 
     def update(self):
-        pass
+        for element in self.UIElements:
+            element.update()
 
     def render(self, window):
         for element in self.UIElements:
